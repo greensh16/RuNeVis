@@ -29,9 +29,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     println!("Global Attributes:");
-    for attr in file.root().attributes() {
-        println!("  Name: {}, Value: {:?}", attr.name(), attr.value());
-    }
+    match file.root() {
+        Some(root) => {
+            for attr in root.attributes() {
+                println!("  Name: {}, Value: {:?}", attr.name(), attr.value());
+            }
+        },
+        None => println!("No root group found."),
+}
 
     Ok(())
 }
