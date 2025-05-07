@@ -1,11 +1,12 @@
 [package]
-name = "runevis"
-version = "0.1.0"
+name = "RuNeVis"
+version = "1.0.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-netcdf = { version = "0.8.3", features = ["static"] }
-rfd = "0.14.1"
-iced = "0.12.1"
+netcdf = { version = "0.11.0", features = ["static"] }
+clap = { version = "4.4", features = ["derive"] }
+ndarray = "0.15"
+chrono = "0.4"

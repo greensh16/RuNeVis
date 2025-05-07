@@ -1,11 +1,11 @@
 use clap::Parser;
 use netcdf::open;
-
+use std::path::Path;
 mod cli;
 mod utils;
 
 use cli::Args;
-use utils::print_metadata;
+use utils::{print_metadata,mean_over_dimension,write_mean_to_netcdf};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Parse command-line arguments
@@ -29,7 +29,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let file = open(&args.file)?;
     println!("Successfully opened NetCDF file: {}", &args.file);
 
-    print_metadata(&file)?;
+    // If mean is specified, compute it; otherwise just print metadata
+    if let Some((var, dim)) = args.mean {
+        let (result, dim_names, new_var_name) = mean_over_dimension(&file, &var, &dim)?;
+
+        if let Some(output_path) = args.output_netcdf {
+            let output_path = Path::new(&output_path);
+            write_mean_to_netcdf(
+                &result,
+                &dim_names,
+                &new_var_name,
+                &var,
+                &file,
+                output_path,
+            )?;
+            println!("✅ Saved result to {}", output_path.display());
+        } else {
+            println!("Mean result: {:?}", result);
+        }
+    } else {
+        print_metadata(&file)?;
+    }
 
     Ok(())
 }
