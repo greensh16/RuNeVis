@@ -1,3 +1,5 @@
+//! Defines command-line interface options using `clap` for the RuNeVis application.
+
 use clap::Parser;
 use std::path::PathBuf;
 

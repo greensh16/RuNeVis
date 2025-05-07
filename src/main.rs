@@ -1,3 +1,6 @@
+//! Entry point for the RuNeVis application.
+//! Handles CLI parsing, file loading, and dispatches operations like computing means or printing metadata.
+
 use clap::Parser;
 use netcdf::open;
 use std::path::Path;

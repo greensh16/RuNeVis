@@ -8,5 +8,5 @@ edition = "2021"
 [dependencies]
 netcdf = { version = "0.11.0", features = ["static"] }
 clap = { version = "4.4", features = ["derive"] }
-ndarray = "0.15"
+ndarray = "0.15.6"
 chrono = "0.4"

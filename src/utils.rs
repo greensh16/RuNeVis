@@ -1,3 +1,6 @@
+//! Utility functions for working with NetCDF files, including metadata printing,
+//! computing means over dimensions, and writing processed results to new files.
+
 use netcdf::{File, create, AttributeValue};
 use ndarray::{ArrayD, Axis, ArrayViewD};
 use std::{
