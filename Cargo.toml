@@ -1,6 +1,6 @@
 [package]
 name = "RuNeVis"
-version = "1.0.0"
+version = "1.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -10,3 +10,15 @@ netcdf = { version = "0.11.0", features = ["static"] }
 clap = { version = "4.4", features = ["derive"] }
 ndarray = "0.15.6"
 chrono = "0.4"
+rayon = "1.8"
+
+[dev-dependencies]
+tempfile = "3.8"
+
+[[example]]
+name = "benchmark"
+path = "examples/benchmark.rs"
+
+[[example]]
+name = "create_test_netcdf"
+path = "examples/create_test_netcdf.rs"
