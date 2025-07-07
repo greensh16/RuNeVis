@@ -2,18 +2,33 @@
 name = "RuNeVis"
 version = "1.1.0"
 edition = "2021"
+rust-version = "1.77.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+# NetCDF bindings - latest 0.11.0, keeping static feature for standalone binaries
 netcdf = { version = "0.11.0", features = ["static"] }
-clap = { version = "4.4", features = ["derive"] }
-ndarray = "0.15.6"
-chrono = "0.4"
-rayon = "1.8"
+
+# CLI argument parsing - update to latest 4.5.x, keeping derive feature
+clap = { version = "4.5.40", features = ["derive"] }
+
+# N-dimensional arrays - keep 0.15.6 for netcdf compatibility, enable rayon for parallel ops
+# Note: netcdf 0.11.0 requires ndarray 0.15.6, cannot upgrade to 0.16.x yet
+ndarray = { version = "0.15.6", features = ["rayon"] }
+
+# Date and time handling - latest 0.4.x
+chrono = { version = "0.4.41", default-features = false, features = ["clock", "std"] }
+
+# Parallel processing - latest 1.10.x
+rayon = "1.10.0"
+
+# CPU core detection
+num_cpus = "1.16.0"
 
 [dev-dependencies]
-tempfile = "3.8"
+# Temporary file handling for tests - latest 3.20.x
+tempfile = "3.20.0"
 
 [[example]]
 name = "benchmark"
@@ -22,3 +37,7 @@ path = "examples/benchmark.rs"
 [[example]]
 name = "create_test_netcdf"
 path = "examples/create_test_netcdf.rs"
+
+[[example]]
+name = "create_large_test_netcdf"
+path = "examples/create_large_test_netcdf.rs"

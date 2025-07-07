@@ -1,7 +1,7 @@
 use ndarray::Array3;
 use netcdf::{create, open};
 use tempfile::tempdir;
-use RuNeVis::utils::{reduce_max, reduce_min};
+use RuNeVis::statistics::{reduce_max, reduce_min};
 
 #[test]
 fn test_reduce_min_max_integration() {
