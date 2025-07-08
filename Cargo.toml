@@ -1,8 +1,13 @@
 [package]
-name = "RuNeVis"
+name = "ru_ne_vis"
 version = "1.1.0"
 edition = "2021"
 rust-version = "1.77.0"
+description = "A comprehensive Rust library for analyzing NetCDF and Zarr files with parallel statistical computations"
+license = "MIT"
+repository = "https://github.com/user/RuNeVis"
+keywords = ["netcdf", "zarr", "statistics", "parallel", "scientific"]
+categories = ["science", "algorithms", "concurrency"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -26,9 +31,18 @@ rayon = "1.10.0"
 # CPU core detection
 num_cpus = "1.16.0"
 
+# Zarr support (basic framework for future implementation)
+serde_json = "1.0"
+tokio = { version = "1.0", features = ["rt", "rt-multi-thread", "macros"] }
+futures = "0.3"
+async-stream = "0.3"
+async-trait = "0.1"
+
 [dev-dependencies]
 # Temporary file handling for tests - latest 3.20.x
 tempfile = "3.20.0"
+# Async test runtime
+tokio-test = "0.4"
 
 [[example]]
 name = "benchmark"
@@ -41,3 +55,11 @@ path = "examples/create_test_netcdf.rs"
 [[example]]
 name = "create_large_test_netcdf"
 path = "examples/create_large_test_netcdf.rs"
+
+[[example]]
+name = "test_zarr"
+path = "examples/test_zarr.rs"
+
+[[example]]
+name = "test_zarr_metadata"
+path = "examples/test_zarr_metadata.rs"

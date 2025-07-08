@@ -1,0 +1,203 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  CARGO_TERM_COLOR: always
+  # Minimum coverage threshold - will be enforced to gate merges
+  # TODO: Gradually increase this threshold as more tests are added
+  # Target: 85% (Current: ~28%, Start with 25%)
+  MIN_COVERAGE: 25
+
+jobs:
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Install Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        components: rustfmt, clippy
+        override: true
+        
+    - name: Cache cargo dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+          
+    - name: Install cargo-audit and cargo-tarpaulin
+      run: |
+        cargo install cargo-audit
+        cargo install cargo-tarpaulin
+      
+    - name: Check code formatting
+      run: cargo fmt --check
+      
+    - name: Run Clippy linter
+      run: cargo clippy --all-targets --all-features -- -D warnings
+      
+    - name: Security audit
+      run: cargo audit
+      
+    - name: Run tests
+      run: cargo test --verbose
+      
+    - name: Run code coverage analysis
+      run: |
+        # Generate coverage report
+        echo "🔍 Running code coverage analysis..."
+        cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out Xml --output-dir ./coverage/
+        
+        # Extract coverage percentage from XML report
+        COVERAGE=$(grep -o 'line-rate="[^"]*"' coverage/cobertura.xml | head -1 | grep -o '[0-9]*\.[0-9]*' | head -1)
+        COVERAGE_PERCENT=$(echo "$COVERAGE * 100" | bc -l | cut -d. -f1)
+        
+        echo "📊 Current test coverage: ${COVERAGE_PERCENT}%"
+        echo "🎯 Minimum required coverage: ${MIN_COVERAGE}%"
+        
+        # Check if coverage meets minimum threshold
+        if [ "$COVERAGE_PERCENT" -ge "$MIN_COVERAGE" ]; then
+          echo "✅ Coverage check PASSED: ${COVERAGE_PERCENT}% >= ${MIN_COVERAGE}%"
+          echo "COVERAGE_STATUS=PASS" >> $GITHUB_ENV
+        else
+          echo "❌ Coverage check FAILED: ${COVERAGE_PERCENT}% < ${MIN_COVERAGE}%"
+          echo "💡 Please add more tests to increase coverage above ${MIN_COVERAGE}%"
+          echo "COVERAGE_STATUS=FAIL" >> $GITHUB_ENV
+          exit 1
+        fi
+        
+        # Store coverage for reporting
+        echo "COVERAGE_PERCENT=${COVERAGE_PERCENT}" >> $GITHUB_ENV
+        
+    - name: Upload coverage reports
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-reports
+        path: coverage/
+        
+    - name: Generate comprehensive quality report
+      if: always()
+      run: |
+        echo "# 🚀 RuNeVis Code Quality Report" > quality-report.md
+        echo "Generated on: $(date)" >> quality-report.md
+        echo "" >> quality-report.md
+        
+        echo "## 📋 Summary" >> quality-report.md
+        echo "| Check | Status | Details |" >> quality-report.md
+        echo "|-------|--------|---------|" >> quality-report.md
+        
+        # Format check
+        echo "## 🎨 Code Formatting" >> quality-report.md
+        if cargo fmt --check &>/dev/null; then
+          echo "| Code Formatting | ✅ PASS | All code follows Rust formatting standards |" >> quality-report.md
+          echo "✅ **PASS** - Code formatting is compliant" >> quality-report.md
+        else
+          echo "| Code Formatting | ❌ FAIL | Code formatting issues found |" >> quality-report.md
+          echo "❌ **FAIL** - Code formatting issues found" >> quality-report.md
+        fi
+        echo "" >> quality-report.md
+        
+        # Clippy check
+        echo "## 🔧 Linting (Clippy)" >> quality-report.md
+        if cargo clippy --all-targets --all-features -- -D warnings &>/dev/null; then
+          echo "| Linting (Clippy) | ✅ PASS | No linting issues found |" >> quality-report.md
+          echo "✅ **PASS** - No linting issues found" >> quality-report.md
+        else
+          echo "| Linting (Clippy) | ❌ FAIL | Linting issues found |" >> quality-report.md
+          echo "❌ **FAIL** - Linting issues found" >> quality-report.md
+        fi
+        echo "" >> quality-report.md
+        
+        # Security audit
+        echo "## 🔒 Security Audit" >> quality-report.md
+        if cargo audit &>/dev/null; then
+          echo "| Security Audit | ✅ PASS | No security vulnerabilities found |" >> quality-report.md
+          echo "✅ **PASS** - No security vulnerabilities found" >> quality-report.md
+        else
+          echo "| Security Audit | ❌ FAIL | Security vulnerabilities found |" >> quality-report.md
+          echo "❌ **FAIL** - Security vulnerabilities found" >> quality-report.md
+        fi
+        echo "" >> quality-report.md
+        
+        # Test coverage
+        echo "## 📊 Test Coverage" >> quality-report.md
+        if [ "$COVERAGE_STATUS" = "PASS" ]; then
+          echo "| Test Coverage | ✅ PASS | ${COVERAGE_PERCENT}% >= ${MIN_COVERAGE}% threshold |" >> quality-report.md
+          echo "✅ **PASS** - Coverage: ${COVERAGE_PERCENT}% (Required: ${MIN_COVERAGE}%)" >> quality-report.md
+        else
+          echo "| Test Coverage | ❌ FAIL | ${COVERAGE_PERCENT}% < ${MIN_COVERAGE}% threshold |" >> quality-report.md
+          echo "❌ **FAIL** - Coverage: ${COVERAGE_PERCENT}% (Required: ${MIN_COVERAGE}%)" >> quality-report.md
+          echo "" >> quality-report.md
+          echo "### 💡 How to improve coverage:" >> quality-report.md
+          echo "1. Add unit tests for uncovered functions" >> quality-report.md
+          echo "2. Add integration tests for end-to-end workflows" >> quality-report.md
+          echo "3. Add regression tests for bug fixes" >> quality-report.md
+          echo "4. Test error handling and edge cases" >> quality-report.md
+        fi
+        echo "" >> quality-report.md
+        
+        echo "## 🧪 Test Results" >> quality-report.md
+        echo "- **Total Tests**: $(cargo test --all 2>&1 | grep -E 'test result:' | grep -o '[0-9]\+ passed' | grep -o '[0-9]\+' || echo '0') tests passed" >> quality-report.md
+        echo "- **Test Coverage**: ${COVERAGE_PERCENT}% of code lines covered" >> quality-report.md
+        echo "- **Coverage Threshold**: ${MIN_COVERAGE}% minimum required" >> quality-report.md
+        echo "" >> quality-report.md
+        
+        echo "## 🔗 Artifacts" >> quality-report.md
+        echo "- 📄 Coverage reports available in artifacts" >> quality-report.md
+        echo "- 🎯 Detailed XML coverage report in Cobertura format" >> quality-report.md
+        
+    - name: Upload quality report
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: quality-report
+        path: quality-report.md
+        
+    - name: Comment coverage on PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const coverage = process.env.COVERAGE_PERCENT;
+          const threshold = process.env.MIN_COVERAGE;
+          const status = process.env.COVERAGE_STATUS;
+          
+          const statusEmoji = status === 'PASS' ? '✅' : '❌';
+          const statusText = status === 'PASS' ? 'PASSED' : 'FAILED';
+          
+          const body = `## ${statusEmoji} Code Coverage Report
+          
+**Current Coverage**: ${coverage}%  
+**Required Threshold**: ${threshold}%  
+**Status**: ${statusText}
+
+${status === 'FAIL' ? 
+'⚠️ **Coverage below threshold!** Please add more tests to meet the minimum coverage requirement.' : 
+'🎉 **Coverage meets requirements!** Great job maintaining high test coverage.'}
+
+---
+*This comment was automatically generated by the code quality workflow.*`;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: body
+          });

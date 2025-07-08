@@ -9,6 +9,7 @@ use std::collections::HashMap;
 
 /// Structured metadata for a NetCDF variable
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct VariableMetadata {
     pub name: String,
     pub data_type: String,
@@ -20,6 +21,7 @@ pub struct VariableMetadata {
 
 /// Information about a dimension
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct DimensionInfo {
     pub name: String,
     pub length: usize,
@@ -82,7 +84,7 @@ pub fn list_variables_and_dimensions(file: &File) -> Result<()> {
 
     // Get all dimensions and sort them alphabetically
     let mut dimensions: Vec<_> = file.dimensions().collect();
-    dimensions.sort_by(|a, b| a.name().cmp(&b.name()));
+    dimensions.sort_by_key(|a| a.name());
 
     if dimensions.is_empty() {
         println!("   (No dimensions found)");
@@ -102,7 +104,7 @@ pub fn list_variables_and_dimensions(file: &File) -> Result<()> {
 
     // Get all variables and sort them alphabetically
     let mut variables: Vec<_> = file.variables().collect();
-    variables.sort_by(|a, b| a.name().cmp(&b.name()));
+    variables.sort_by_key(|a| a.name());
 
     if variables.is_empty() {
         println!("   (No variables found)");
@@ -139,18 +141,14 @@ pub fn list_variables_and_dimensions(file: &File) -> Result<()> {
             let mut key_attrs = Vec::new();
 
             if let Some(units_attr) = var.attribute("units") {
-                if let Ok(units_val) = units_attr.value() {
-                    if let netcdf::AttributeValue::Str(units) = units_val {
-                        key_attrs.push(format!("units: {}", units));
-                    }
+                if let Ok(netcdf::AttributeValue::Str(units)) = units_attr.value() {
+                    key_attrs.push(format!("units: {}", units));
                 }
             }
 
             if let Some(long_name_attr) = var.attribute("long_name") {
-                if let Ok(long_name_val) = long_name_attr.value() {
-                    if let netcdf::AttributeValue::Str(long_name) = long_name_val {
-                        key_attrs.push(format!("long_name: {}", long_name));
-                    }
+                if let Ok(netcdf::AttributeValue::Str(long_name)) = long_name_attr.value() {
+                    key_attrs.push(format!("long_name: {}", long_name));
                 }
             }
 
@@ -276,9 +274,10 @@ pub fn describe_variable(file: &File, var_name: &str) -> Result<()> {
     let data_type_str = format!("{:?}", var.vartype()).to_lowercase();
     let element_size = if data_type_str.contains("double") {
         8
-    } else if data_type_str.contains("float") {
-        4
-    } else if data_type_str.contains("int") || data_type_str.contains("uint") {
+    } else if data_type_str.contains("float")
+        || data_type_str.contains("int")
+        || data_type_str.contains("uint")
+    {
         4
     } else if data_type_str.contains("short") || data_type_str.contains("ushort") {
         2
@@ -317,6 +316,7 @@ pub fn describe_variable(file: &File, var_name: &str) -> Result<()> {
 }
 
 /// Get structured metadata for a variable
+#[allow(dead_code)]
 pub fn get_variable_metadata(file: &File, var_name: &str) -> Result<VariableMetadata> {
     let var = file
         .variable(var_name)
@@ -348,9 +348,8 @@ pub fn get_variable_metadata(file: &File, var_name: &str) -> Result<VariableMeta
     // Estimate element size based on data type
     let element_size = if data_type.contains("double") {
         8
-    } else if data_type.contains("float") {
-        4
-    } else if data_type.contains("int") || data_type.contains("uint") {
+    } else if data_type.contains("float") || data_type.contains("int") || data_type.contains("uint")
+    {
         4
     } else if data_type.contains("short") || data_type.contains("ushort") {
         2

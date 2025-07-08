@@ -8,9 +8,9 @@ use std::path::Path;
 mod cli;
 mod errors;
 mod metadata;
-mod statistics;
 mod netcdf_io;
 mod parallel;
+mod statistics;
 
 use cli::Args;
 use parallel::ParallelConfig;
@@ -21,9 +21,9 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
 
     // Initialize parallel processing configuration
     let parallel_config = ParallelConfig::new(args.threads);
-    parallel_config.setup_global_pool().map_err(|e| {
-        format!("Failed to setup parallel processing: {}", e)
-    })?;
+    parallel_config
+        .setup_global_pool()
+        .map_err(|e| format!("Failed to setup parallel processing: {}", e))?;
 
     println!(
         r#"
@@ -65,33 +65,48 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
 
         if let Some(output_path) = args.output_netcdf {
             let output_path = Path::new(&output_path);
-            netcdf_io::write_mean_to_netcdf(&result, &dim_names, &new_var_name, &var, &file, output_path)
-                .map_err(|e| {
-                    format!(
-                        "Failed writing to NetCDF '{}': {}",
-                        output_path.display(),
-                        e
-                    )
-                })?;
+            netcdf_io::write_mean_to_netcdf(
+                &result,
+                &dim_names,
+                &new_var_name,
+                &var,
+                &file,
+                output_path,
+            )
+            .map_err(|e| {
+                format!(
+                    "Failed writing to NetCDF '{}': {}",
+                    output_path.display(),
+                    e
+                )
+            })?;
             println!("✅ Result saved to {}", output_path.display());
         } else {
             println!("Computed mean array:\n{:#?}", result);
         }
     } else if let Some((var, dim)) = args.sum {
         // Compute sum over specified dimension
-        let (result, dim_names, new_var_name) = statistics::sum_over_dimension(&file, &var, &dim)
-            .map_err(|e| format!("Failed computing sum for variable '{}': {}", var, e))?;
+        let (result, dim_names, new_var_name) =
+            statistics::sum_over_dimension(&file, &var, &dim)
+                .map_err(|e| format!("Failed computing sum for variable '{}': {}", var, e))?;
 
         if let Some(output_path) = args.output_netcdf {
             let output_path = Path::new(&output_path);
-            netcdf_io::write_sum_to_netcdf(&result, &dim_names, &new_var_name, &var, &file, output_path)
-                .map_err(|e| {
-                    format!(
-                        "Failed writing to NetCDF '{}': {}",
-                        output_path.display(),
-                        e
-                    )
-                })?;
+            netcdf_io::write_sum_to_netcdf(
+                &result,
+                &dim_names,
+                &new_var_name,
+                &var,
+                &file,
+                output_path,
+            )
+            .map_err(|e| {
+                format!(
+                    "Failed writing to NetCDF '{}': {}",
+                    output_path.display(),
+                    e
+                )
+            })?;
             println!("✅ Result saved to {}", output_path.display());
         } else {
             println!("Computed sum array:\n{:#?}", result);
@@ -103,14 +118,21 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
 
         if let Some(output_path) = &args.output_netcdf {
             let output_path = Path::new(output_path);
-            netcdf_io::write_min_to_netcdf(&result, &dim_names, &new_var_name, var, &file, output_path)
-                .map_err(|e| {
-                    format!(
-                        "Failed writing to NetCDF '{}': {}",
-                        output_path.display(),
-                        e
-                    )
-                })?;
+            netcdf_io::write_min_to_netcdf(
+                &result,
+                &dim_names,
+                &new_var_name,
+                var,
+                &file,
+                output_path,
+            )
+            .map_err(|e| {
+                format!(
+                    "Failed writing to NetCDF '{}': {}",
+                    output_path.display(),
+                    e
+                )
+            })?;
             println!("✅ Result saved to {}", output_path.display());
         } else {
             println!("Computed minimum array:\n{:#?}", result);
@@ -122,14 +144,21 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
 
         if let Some(output_path) = &args.output_netcdf {
             let output_path = Path::new(output_path);
-            netcdf_io::write_max_to_netcdf(&result, &dim_names, &new_var_name, var, &file, output_path)
-                .map_err(|e| {
-                    format!(
-                        "Failed writing to NetCDF '{}': {}",
-                        output_path.display(),
-                        e
-                    )
-                })?;
+            netcdf_io::write_max_to_netcdf(
+                &result,
+                &dim_names,
+                &new_var_name,
+                var,
+                &file,
+                output_path,
+            )
+            .map_err(|e| {
+                format!(
+                    "Failed writing to NetCDF '{}': {}",
+                    output_path.display(),
+                    e
+                )
+            })?;
             println!("✅ Result saved to {}", output_path.display());
         } else {
             println!("Computed maximum array:\n{:#?}", result);
@@ -148,7 +177,8 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
         })?;
     } else if let Some(slice_spec) = args.slice {
         // Extract a slice of data
-        netcdf_io::extract_slice(&file, slice_spec).map_err(|e| format!("Failed extracting slice: {}", e))?;
+        netcdf_io::extract_slice(&file, slice_spec)
+            .map_err(|e| format!("Failed extracting slice: {}", e))?;
     } else {
         // Default: print full metadata
         metadata::print_metadata(&file).map_err(|e| format!("Failed printing metadata: {}", e))?;

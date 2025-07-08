@@ -1,0 +1,32 @@
+# Markdown Linter Configuration for RuNeVis
+# This file customizes markdownlint rules for better compatibility with technical documentation
+
+# Disable line length rule - technical documentation often has long lines
+MD013: false
+
+# Allow headings without surrounding blank lines for compact formatting
+MD022: false
+
+# Allow lists without surrounding blank lines for compact formatting
+MD032: false
+
+# Allow code blocks without language specification (for generic examples)
+MD040: false
+
+# Allow fenced code blocks without surrounding blank lines in some contexts
+MD031: false
+
+# Allow tables without surrounding blank lines
+MD058: false
+
+# Allow trailing punctuation in headings (for technical sections like "Prerequisites:")
+MD026: false
+
+# Allow ordered list prefix inconsistencies for mixed content
+MD029: false
+
+# Allow emphasis as heading for stylistic elements
+MD036: false
+
+# Allow duplicate headings (common in technical docs with repeated sections)
+MD024: false

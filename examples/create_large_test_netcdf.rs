@@ -11,7 +11,10 @@ use std::path::Path;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let output_path = Path::new("large_test_data.nc");
 
-    println!("🔨 Creating large test NetCDF file for profiling: {}", output_path.display());
+    println!(
+        "🔨 Creating large test NetCDF file for profiling: {}",
+        output_path.display()
+    );
 
     // Remove existing file if it exists
     if output_path.exists() {
@@ -28,10 +31,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Add larger dimensions for performance testing
     println!("📏 Adding dimensions...");
-    file.add_dimension("time", 365)?;     // 365 time steps (daily data)
-    file.add_dimension("lat", 180)?;      // 180 latitude points (1 degree resolution)
-    file.add_dimension("lon", 360)?;      // 360 longitude points (1 degree resolution)
-    file.add_dimension("level", 10)?;     // 10 pressure levels
+    file.add_dimension("time", 365)?; // 365 time steps (daily data)
+    file.add_dimension("lat", 180)?; // 180 latitude points (1 degree resolution)
+    file.add_dimension("lon", 360)?; // 360 longitude points (1 degree resolution)
+    file.add_dimension("level", 10)?; // 10 pressure levels
 
     // Add coordinate variables
     println!("🔗 Creating coordinate variables...");
@@ -87,9 +90,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         temp_var.put_attribute("_FillValue", -999.0f32)?;
 
         // Create realistic temperature data - this will be about 23.4 million data points
-        println!("   🏗️ Generating temperature data (365 × 180 × 360 = {} points)...", 365 * 180 * 360);
+        println!(
+            "   🏗️ Generating temperature data (365 × 180 × 360 = {} points)...",
+            365 * 180 * 360
+        );
         let mut temp_data = Vec::with_capacity(365 * 180 * 360);
-        
+
         for time_idx in 0..365 {
             if time_idx % 50 == 0 {
                 println!("   📅 Processing day {}/365...", time_idx + 1);
@@ -98,13 +104,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let lat = -89.5 + lat_idx as f32;
                 for lon_idx in 0..360 {
                     let lon = -179.5 + lon_idx as f32;
-                    
+
                     // Generate realistic temperature based on latitude, longitude, and season
                     let base_temp = 288.0; // 15°C in Kelvin
                     let lat_effect = -30.0 * (lat.abs() / 90.0); // Cooler at poles
-                    let seasonal_effect = 15.0 * ((time_idx as f32 * 2.0 * std::f32::consts::PI / 365.0 + lat.to_radians()).cos()); // Seasonal variation
+                    let seasonal_effect = 15.0
+                        * ((time_idx as f32 * 2.0 * std::f32::consts::PI / 365.0
+                            + lat.to_radians())
+                        .cos()); // Seasonal variation
                     let noise = (lon * 0.1 + time_idx as f32 * 0.01).sin() * 2.0; // Small random variation
-                    
+
                     temp_data.push(base_temp + lat_effect + seasonal_effect + noise);
                 }
             }
@@ -115,19 +124,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         temp_var.put(temp_array.view(), ..)?;
     }
 
-    // Add 4D pressure variable (time, level, lat, lon) - very large dataset  
+    // Add 4D pressure variable (time, level, lat, lon) - very large dataset
     println!("🌪️  Creating pressure variable (time, level, lat, lon)...");
     {
-        let mut pres_var = file.add_variable::<f32>("pressure", &["time", "level", "lat", "lon"])?;
+        let mut pres_var =
+            file.add_variable::<f32>("pressure", &["time", "level", "lat", "lon"])?;
         pres_var.put_attribute("units", "Pa")?;
         pres_var.put_attribute("long_name", "air pressure")?;
         pres_var.put_attribute("standard_name", "air_pressure")?;
         pres_var.put_attribute("_FillValue", -999.0f32)?;
 
         // Create pressure data - this will be about 234 million data points!
-        println!("   🏗️ Generating pressure data (365 × 10 × 180 × 360 = {} points)...", 365 * 10 * 180 * 360);
+        println!(
+            "   🏗️ Generating pressure data (365 × 10 × 180 × 360 = {} points)...",
+            365 * 10 * 180 * 360
+        );
         let mut pres_data = Vec::with_capacity(365 * 10 * 180 * 360);
-        
+
         for time_idx in 0..365 {
             if time_idx % 50 == 0 {
                 println!("   📅 Processing day {}/365...", time_idx + 1);
@@ -138,12 +151,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let lat = -89.5 + lat_idx as f32;
                     for lon_idx in 0..360 {
                         let lon = -179.5 + lon_idx as f32;
-                        
+
                         // Generate realistic pressure based on altitude and surface pressure variations
                         let base_pressure = pressure_level * 100.0; // Convert hPa to Pa
-                        let surface_variation = 5000.0 * ((lat / 30.0).sin() + (lon / 60.0).cos() + (time_idx as f32 / 100.0).sin()); 
+                        let surface_variation = 5000.0
+                            * ((lat / 30.0).sin()
+                                + (lon / 60.0).cos()
+                                + (time_idx as f32 / 100.0).sin());
                         let altitude_factor = 1.0 - (level_idx as f32 * 0.05); // Pressure decreases with altitude
-                        
+
                         pres_data.push((base_pressure + surface_variation) * altitude_factor);
                     }
                 }
@@ -151,7 +167,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         println!("   💾 Writing pressure data to NetCDF...");
-        let pres_array = Array1::from(pres_data).into_shape((365, 10, 180, 360)).unwrap();
+        let pres_array = Array1::from(pres_data)
+            .into_shape((365, 10, 180, 360))
+            .unwrap();
         pres_var.put(pres_array.view(), ..)?;
     }
 
@@ -161,8 +179,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("✅ Successfully created large test NetCDF file:");
     println!("   📏 Dimensions: time(365), lat(180), lon(360), level(10)");
     println!("   📈 Variables: time, lat, lon, level, temperature, pressure");
-    println!("   📊 Temperature data points: {} ({:.1} MB approx)", 365 * 180 * 360, (365 * 180 * 360 * 4) as f64 / (1024.0 * 1024.0));
-    println!("   🌪️  Pressure data points: {} ({:.1} MB approx)", 365 * 10 * 180 * 360, (365 * 10 * 180 * 360 * 4) as f64 / (1024.0 * 1024.0));
+    println!(
+        "   📊 Temperature data points: {} ({:.1} MB approx)",
+        365 * 180 * 360,
+        (365 * 180 * 360 * 4) as f64 / (1024.0 * 1024.0)
+    );
+    println!(
+        "   🌪️  Pressure data points: {} ({:.1} MB approx)",
+        365 * 10 * 180 * 360,
+        (365 * 10 * 180 * 360 * 4) as f64 / (1024.0 * 1024.0)
+    );
     println!("   💾 Total file size: {:.1} MB", file_size_mb);
     println!();
     println!("🔬 Ready for performance profiling with:");

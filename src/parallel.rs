@@ -30,21 +30,26 @@ impl ParallelConfig {
                         num_threads, e
                     ))
                 })?;
-            
-            println!("✅ Configured parallel processing with {} threads", num_threads);
+
+            println!(
+                "✅ Configured parallel processing with {} threads",
+                num_threads
+            );
         } else {
             println!("✅ Using default thread pool configuration");
         }
-        
+
         Ok(())
     }
 
     /// Get the current number of threads being used
+    #[allow(dead_code)]
     pub fn current_threads(&self) -> usize {
         rayon::current_num_threads()
     }
 
     /// Create a configuration that uses all available CPU cores
+    #[allow(dead_code)]
     pub fn all_cores() -> Self {
         Self {
             num_threads: Some(num_cpus::get()),
@@ -52,6 +57,7 @@ impl ParallelConfig {
     }
 
     /// Create a configuration that uses a specific number of threads
+    #[allow(dead_code)]
     pub fn with_threads(num_threads: usize) -> Self {
         Self {
             num_threads: Some(num_threads),
@@ -59,23 +65,25 @@ impl ParallelConfig {
     }
 
     /// Create a configuration that uses the default thread pool
-    pub fn default() -> Self {
+    pub fn new_default() -> Self {
         Self { num_threads: None }
     }
 }
 
 impl Default for ParallelConfig {
     fn default() -> Self {
-        Self::default()
+        Self::new_default()
     }
 }
 
 /// Trait for types that can perform parallel reductions
+#[allow(dead_code)]
 pub trait ParallelReduction<T> {
     fn reduce_parallel(&self, config: &ParallelConfig) -> Result<T>;
 }
 
 /// Get information about the current parallel configuration
+#[allow(dead_code)]
 pub fn get_parallel_info() -> ParallelInfo {
     ParallelInfo {
         current_threads: rayon::current_num_threads(),
@@ -88,6 +96,7 @@ pub fn get_parallel_info() -> ParallelInfo {
 
 /// Information about the parallel processing environment
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ParallelInfo {
     pub current_threads: usize,
     pub available_cores: usize,
@@ -96,6 +105,7 @@ pub struct ParallelInfo {
 
 impl ParallelInfo {
     /// Print parallel processing information
+    #[allow(dead_code)]
     pub fn print_info(&self) {
         println!("📊 Parallel Processing Information:");
         println!("   Current threads: {}", self.current_threads);

@@ -46,21 +46,21 @@ impl<'a> NetCDFWriter<'a> {
         }
 
         // Extract `_FillValue` from original variable
-        let orig_var = self
-            .input_file
-            .variable(original_var_name)
-            .ok_or_else(|| RuNeVisError::VariableNotFound {
+        let orig_var = self.input_file.variable(original_var_name).ok_or_else(|| {
+            RuNeVisError::VariableNotFound {
                 var: original_var_name.to_string(),
-            })?;
+            }
+        })?;
 
-        let fill_value = orig_var
-            .attribute("_FillValue")
-            .and_then(|attr| match attr.value().ok()? {
-                AttributeValue::Float(v) => Some(v),
-                AttributeValue::Double(v) => Some(v as f32),
-                AttributeValue::Short(v) => Some(v as f32),
-                _ => None,
-            });
+        let fill_value =
+            orig_var
+                .attribute("_FillValue")
+                .and_then(|attr| match attr.value().ok()? {
+                    AttributeValue::Float(v) => Some(v),
+                    AttributeValue::Double(v) => Some(v as f32),
+                    AttributeValue::Short(v) => Some(v as f32),
+                    _ => None,
+                });
 
         let dim_refs: Vec<&str> = dim_names.iter().map(|s| s.as_str()).collect();
         let mut new_var = file.add_variable::<f32>(var_name, &dim_refs)?;
@@ -174,11 +174,11 @@ pub fn write_max_to_netcdf(
 
 /// Extracts a slice of data from a variable based on the provided slice specification.
 pub fn extract_slice(file: &File, slice_spec: SliceSpec) -> Result<()> {
-    let var = file
-        .variable(&slice_spec.variable)
-        .ok_or_else(|| RuNeVisError::VariableNotFound {
-            var: slice_spec.variable.clone(),
-        })?;
+    let var =
+        file.variable(&slice_spec.variable)
+            .ok_or_else(|| RuNeVisError::VariableNotFound {
+                var: slice_spec.variable.clone(),
+            })?;
 
     // Get variable dimensions
     let var_dims: Vec<String> = var

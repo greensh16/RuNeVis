@@ -28,19 +28,28 @@ RuNeVis is a cutting-edge Rust-based platform engineered for high-performance pa
 ## Features
 
 ### 🚀 **Parallel Processing**
-- **Multi-core computation**: Leverages Rayon for parallel mean calculations across multiple CPU cores
+- **Multi-core computation**: Leverages Rayon for parallel computations across multiple CPU cores
 - **Thread control**: Configure the number of threads with `--threads` option
+- **Zarr parallel I/O**: Parallel reading and writing of Zarr arrays with chunk-based processing
 - **Efficient memory usage**: Optimized for large datasets with smart memory management
 - **Up to 7x speedup**: Scales with dataset size and CPU cores
+- **Parallel statistical operations**: Mean, sum, min, max calculations with automatic parallelization
 
 ### 📊 **Data Analysis**
 - **Statistical operations**: Calculate mean, sum, min, max over any dimension
-- **Metadata inspection**: View global attributes, variables, and dimensions
-- **Data slicing**: Extract specific regions or time periods
-- **Data export**: Save results to new NetCDF files with preserved metadata
+- **NetCDF support**: Full read/write support for NetCDF files with metadata preservation
+- **Zarr integration**: Read and write Zarr arrays with parallel processing capabilities
+- **Metadata inspection**: View global attributes, variables, and dimensions for both NetCDF and Zarr
+- **Data slicing**: Extract specific regions or time periods from large datasets
+- **Data export**: Save results to new NetCDF or Zarr files with preserved metadata
+- **Regression testing**: Built-in regression tests for critical reduction functions
 
-### 🛠️ **Performance Features**
-- **Robust error handling**: NaN and infinite value detection
+### 🛠️ **Quality Assurance & Performance**
+- **Comprehensive testing**: 28%+ code coverage with unit, integration, and regression tests
+- **CI/CD pipeline**: Automated testing, linting, formatting, and coverage analysis
+- **Coverage gating**: Merge protection with configurable coverage thresholds (currently 25%, target 85%)
+- **Code quality tools**: Clippy linting, rustfmt formatting, cargo audit security scanning
+- **Robust error handling**: NaN and infinite value detection with structured error types
 - **Progress indicators**: Visual feedback for long-running operations
 - **Memory efficient**: Streaming operations for large datasets
 - **Self-contained**: No external NetCDF library dependencies
@@ -48,8 +57,11 @@ RuNeVis is a cutting-edge Rust-based platform engineered for high-performance pa
 ### 🏗️ **Modern Architecture**
 - **Modular design**: Clean separation of concerns with dedicated modules
 - **Type safety**: Strong typing and structured error handling
+- **Async support**: Tokio-based async operations for I/O-intensive tasks
 - **Extensible**: Trait-based design for easy extension
-- **Well-tested**: Comprehensive unit and integration tests
+- **Well-tested**: Comprehensive unit, integration, and regression tests
+- **Documentation**: Extensive inline documentation and examples
+- **Development workflow**: GitHub Actions for automated CI/CD with quality gates
 
 ## Performance
 
@@ -204,12 +216,16 @@ RuNeVis/
 │   ├── cli.rs           # Command-line interface
 │   ├── errors.rs        # Centralized error handling
 │   ├── metadata.rs      # NetCDF file inspection
-│   ├── netcdf_io.rs     # File I/O operations
+│   ├── netcdf_io.rs     # NetCDF file I/O operations
+│   ├── zarr_io.rs       # Zarr array I/O operations
 │   ├── parallel.rs      # Parallel processing configuration
-│   ├── statistics.rs    # Statistical computations
-│   └── utils.rs         # Shared utilities
-├── tests/               # Integration tests
-├── examples/            # Usage examples
+│   └── statistics.rs    # Statistical computations
+├── tests/
+│   ├── integration_test.rs  # Integration tests
+│   └── unit_tests.rs        # Comprehensive unit tests
+├── examples/            # Usage examples and benchmarks
+├── .github/workflows/   # CI/CD pipelines
+├── COVERAGE_PLAN.md     # Coverage improvement roadmap
 └── Cargo.toml          # Project configuration
 ```
 
@@ -217,11 +233,12 @@ RuNeVis/
 
 | Module | Purpose | Key Features |
 |--------|---------|-------------|
-| `statistics` | Statistical computations | Parallel mean/sum/min/max, extensible traits |
-| `metadata` | File inspection | Variable analysis, dimension info |
-| `netcdf_io` | File I/O operations | Data slicing, result export |
-| `parallel` | Parallel processing | Thread pool management, performance tuning |
-| `errors` | Error handling | Structured error types, proper error chaining |
+| `statistics` | Statistical computations | Parallel mean/sum/min/max, extensible traits, regression functions |
+| `metadata` | File inspection | Variable analysis, dimension info, array metadata |
+| `netcdf_io` | NetCDF file operations | Data slicing, result export, metadata preservation |
+| `zarr_io` | Zarr array operations | Parallel chunk I/O, async operations, metadata handling |
+| `parallel` | Parallel processing | Thread pool management, Rayon configuration, performance tuning |
+| `errors` | Error handling | Structured error types, proper error chaining, async error handling |
 
 ## Examples & Use Cases
 
@@ -329,18 +346,21 @@ runevis -f data.nc --describe temperature
 
 | Crate | Version | Purpose |
 |-------|---------|----------|
-| `netcdf` | 0.11.0 | NetCDF file format support |
+| `netcdf` | 0.11.0 | NetCDF file format support with static linking |
 | `rayon` | 1.10.0 | Parallel processing framework |
-| `ndarray` | 0.15.6 | Multi-dimensional array operations |
-| `clap` | 4.5.40 | Command-line interface |
+| `ndarray` | 0.15.6 | Multi-dimensional array operations with Rayon integration |
+| `clap` | 4.5.40 | Command-line interface with derive macros |
 | `chrono` | 0.4.41 | Date and time handling |
-| `num_cpus` | 1.16.0 | CPU core detection |
+| `num_cpus` | 1.16.0 | CPU core detection for thread pool sizing |
+| `serde_json` | 1.0+ | JSON serialization for Zarr metadata |
+| `tokio` | 1.0+ | Async runtime for I/O operations |
 
 ### Development Dependencies
 
 | Crate | Version | Purpose |
 |-------|---------|----------|
 | `tempfile` | 3.20.0 | Temporary file handling for tests |
+| `tokio-test` | 0.4+ | Async test utilities |
 
 ### Feature Flags
 
