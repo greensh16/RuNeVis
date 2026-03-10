@@ -12,15 +12,15 @@ categories = ["science", "algorithms", "concurrency"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# NetCDF bindings - latest 0.11.0, keeping static feature for standalone binaries
-netcdf = { version = "0.11.0", features = ["static"] }
+# NetCDF bindings - 0.11.1+ required; 0.11.0 used ndarray 0.15 which is incompatible with 0.11.1+
+netcdf = { version = "0.11.1", features = ["static"] }
 
 # CLI argument parsing - update to latest 4.5.x, keeping derive feature
 clap = { version = "4.5.40", features = ["derive"] }
 
-# N-dimensional arrays - keep 0.15.6 for netcdf compatibility, enable rayon for parallel ops
-# Note: netcdf 0.11.0 requires ndarray 0.15.6, cannot upgrade to 0.16.x yet
-ndarray = { version = "0.15.6", features = ["rayon"] }
+# N-dimensional arrays - must match the version used by the resolved netcdf 0.11.x crate.
+# netcdf >=0.11.1 depends on ndarray 0.17; 0.15.x is no longer compatible.
+ndarray = { version = "0.17", features = ["rayon"] }
 
 # Date and time handling - latest 0.4.x
 chrono = { version = "0.4.41", default-features = false, features = ["clock", "std"] }

@@ -1,6 +1,7 @@
 /target
-Cargo.lock
 .vscode
 *.nc
 .DS_Store
 test_zarr_store/
+/docs
+/profiling_results
