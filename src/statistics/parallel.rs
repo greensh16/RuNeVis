@@ -141,3 +141,77 @@ pub fn parallel_max_axis(data: &ArrayD<f32>, axis: usize) -> Result<ArrayD<f32>>
     let final_result = result.mapv(|x| if x == f32::NEG_INFINITY { f32::NAN } else { x });
     Ok(final_result.into_dyn())
 }
+
+pub fn parallel_median_axis(data: &ArrayD<f32>, axis: usize) -> Result<ArrayD<f32>> {
+    // Convert f32 data to f64 for computation to avoid precision loss
+    let data_f64: Vec<f64> = data.iter().map(|&x| f64::from(x)).collect();
+    let data_f64_array = ArrayD::from_shape_vec(data.raw_dim(), data_f64)?;
+
+    let original_shape = data.shape();
+    let axis_len = original_shape[axis];
+
+    // Use reduce with a custom median operation that tracks count
+    let mut new_shape = original_shape.to_vec();
+    new_shape.remove(axis);
+    let output_size: usize = new_shape.iter().product();
+
+    println!(
+        "⚡ Processing {output_size} elements across {} CPU cores",
+        rayon::current_num_threads()
+    );
+
+    // Create output vector for parallel computation with mean calculation
+    let result: Vec<f32> = (0..output_size)
+        .into_par_iter()
+        .map(|flat_idx| {
+            // Convert flat index back to multi-dimensional coordinates
+            let mut coords = vec![0; original_shape.len()];
+            let mut remaining = flat_idx;
+
+            // Fill coordinates, skipping the axis we're averaging over
+            let mut coord_idx = 0;
+            for (dim_idx, &_dim_size) in original_shape.iter().enumerate() {
+                if dim_idx != axis {
+                    let stride = new_shape[coord_idx + 1..].iter().product::<usize>();
+                    coords[dim_idx] = remaining / stride;
+                    remaining %= stride;
+                    coord_idx += 1;
+                }
+            }            
+
+            // Collect all valid values along the axis into a vec
+            let mut values = Vec::with_capacity(axis_len);
+            for i in 0..axis_len {
+                coords[axis] = i;
+                if let Some(value) = data_f64_array.get(coords.as_slice()) {
+                    if value.is_finite() {
+                        values.push(*value);
+                    }
+                }
+            }
+            
+            // If the entire vec is empty, return nan
+            if values.is_empty() {
+                return f32::NAN; 
+            }
+
+            let mid = values.len() / 2;
+            // Performs quickselect algorithm to find median value in average O(n) time, O(n^2) worst case 
+            // let (_, median, _) = values.select_nth_unstable_by(|a: &f64, b: &f64| a.partial_cmp(b).unwrap());
+            values.select_nth_unstable_by(mid, |a: &f64, b: &f64| a.partial_cmp(b).unwrap());
+            let median = values[mid];
+            if values.len() % 2 == 0 {
+                let max_left = values[..mid]
+                    .iter()
+                    .cloned()
+                    .fold(f64::NEG_INFINITY, f64::max);
+                ((max_left + median) / 2.0) as f32
+            } else {
+                median as f32
+            }
+        })
+        .collect();
+
+    // Reshape the result back to the expected dimensions
+    Ok(ArrayD::from_shape_vec(new_shape, result)?)
+}
