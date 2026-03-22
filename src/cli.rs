@@ -20,6 +20,10 @@ pub struct Args {
     #[arg(long, value_parser = parse_mean_arg)]
     pub mean: Option<(String, String)>,
 
+    /// Compute the median for a variable over a specific dimension, formatted as <var>:<dim>
+    #[arg(long, value_parser = parse_mean_arg)]
+    pub median: Option<(String, String)>,
+
     /// Compute the sum for a variable over a specific dimension, formatted as <var>:<dim>
     #[arg(long, value_parser = parse_mean_arg)]
     pub sum: Option<(String, String)>,

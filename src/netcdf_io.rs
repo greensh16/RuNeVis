@@ -133,6 +133,19 @@ pub fn write_mean_to_netcdf(
     writer.write_result(data, dim_names, var_name, original_var_name)
 }
 
+/// Writes computed median to a new NetCDF file with attributes copied.
+pub fn write_median_to_netcdf(
+    data: &ArrayD<f32>,
+    dim_names: &[String],
+    var_name: &str,
+    original_var_name: &str,
+    input_file: &File,
+    output_path: &Path,
+) -> Result<()> {
+    let writer = NetCDFWriter::new(input_file, output_path);
+    writer.write_result(data, dim_names, var_name, original_var_name)
+}
+
 /// Writes computed sum to a new NetCDF file with attributes copied.
 pub fn write_sum_to_netcdf(
     data: &ArrayD<f32>,

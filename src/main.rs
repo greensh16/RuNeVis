@@ -163,6 +163,32 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
         } else {
             println!("Computed maximum array:\n{:#?}", result);
         }
+    }  else if let Some((var, dim)) = args.median {
+        // Compute mean over specified dimension
+        let (result, dim_names, new_var_name) = statistics::median_over_dimension(&file, &var, &dim)
+            .map_err(|e| format!("Failed computing median for variable '{}': {}", var, e))?;
+
+        if let Some(output_path) = args.output_netcdf {
+            let output_path = Path::new(&output_path);
+            netcdf_io::write_median_to_netcdf(
+                &result,
+                &dim_names,
+                &new_var_name,
+                &var,
+                &file,
+                output_path,
+            )
+            .map_err(|e| {
+                format!(
+                    "Failed writing to NetCDF '{}': {}",
+                    output_path.display(),
+                    e
+                )
+            })?;
+            println!("✅ Result saved to {}", output_path.display());
+        } else {
+            println!("Computed median array:\n{:#?}", result);
+        }
     } else if let Some(var_name) = args.describe {
         // Describe a specific variable's details
         metadata::describe_variable(&file, &var_name)
