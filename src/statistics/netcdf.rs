@@ -33,6 +33,32 @@ pub fn mean_over_dimension(
     compute_stat_over_dimension(file, var_name, dim_name, StatOperation::Mean)
 }
 
+/// Computes median over a specified dimension for a NetCDF variable using parallel processing
+///
+/// # Arguments
+///
+/// * `file` - The NetCDF file containing the variable
+/// * `var_name` - Name of the variable to compute statistics for
+/// * `dim_name` - Name of the dimension to reduce over
+///
+/// # Returns
+///
+/// A tuple containing:
+/// - The computed median data as an ArrayD<f32>
+/// - Vector of remaining dimension names
+/// - Generated variable name for the result
+///
+/// # Errors
+///
+/// Returns an error if the variable or dimension is not found, or if computation fails.
+pub fn median_over_dimension(
+    file: &File,
+    var_name: &str,
+    dim_name: &str,
+) -> Result<(ArrayD<f32>, Vec<String>, String)> {
+    compute_stat_over_dimension(file, var_name, dim_name, StatOperation::Median)
+}
+
 /// Computes sum over a specified dimension for a NetCDF variable using parallel processing
 ///
 /// # Arguments

@@ -16,6 +16,8 @@ pub enum StatOperation {
     Min,
     /// Maximum value
     Max,
+    /// Median value
+    Median,
 }
 
 impl StatOperation {
@@ -27,6 +29,7 @@ impl StatOperation {
             Self::Sum => "sum",
             Self::Min => "minimum",
             Self::Max => "maximum",
+            Self::Median => "median",
         }
     }
 }
@@ -103,6 +106,7 @@ impl StatisticalReduction<f32> for ArrayD<f32> {
 
         match operation {
             StatOperation::Mean => super::parallel::parallel_mean_axis(self, axis),
+            StatOperation::Median => super::parallel::parallel_median_axis(self, axis),
             StatOperation::Sum => super::parallel::parallel_sum_axis(self, axis),
             StatOperation::Min => super::parallel::parallel_min_axis(self, axis),
             StatOperation::Max => super::parallel::parallel_max_axis(self, axis),
