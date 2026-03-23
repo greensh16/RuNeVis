@@ -12,7 +12,7 @@ use ru_ne_vis::{
     },
     netcdf_io::NetCDFWriter,
     parallel::{get_parallel_info, ParallelConfig},
-    statistics::{mean_over_dimension, StatOperation},
+    statistics::{mean_over_dimension, median_over_dimension, StatOperation},
     zarr_io::{ArrayMetadata, ZarrReader, ZarrSource},
 };
 use tempfile::tempdir;
@@ -219,6 +219,87 @@ fn test_statistics_comprehensive() -> Result<()> {
 
     // Test error for non-existent variable
     let result = mean_over_dimension(&file, "invalid_var", "time");
+    assert!(result.is_err());
+
+    Ok(())
+}
+
+#[test]
+fn test_statistics_median() -> Result<()> {
+    // Create a temporary NetCDF file
+    let temp_dir = tempdir().expect("Failed to create temp dir");
+    let file_path = temp_dir.path().join("test_stats.nc");
+
+    // Create well-known test data for predictable results
+    let test_data: Vec<f32> = vec![
+        // time=0: lat=0,1,2 lon=0,1
+        111.0, 245.0, // lat=0
+        513.0, 412.0, // lat=1
+        3235.0, 65.0, // lat=2
+        // time=1
+        711.0, 81.0, // lat=0
+        119.0, 110.0, // lat=1
+        111.0, 1112.0, // lat=2
+        // time=2
+        153.0, 146.0, // lat=0
+        1665.0, 166.0, // lat=1
+        167.0, 186.0, // lat=2
+        // time=3
+        1921.0, 2087.0, // lat=0
+        216.0, 262.0, // lat=1
+        263.0, 224.0, // lat=2
+    ];
+
+    // Create NetCDF file
+    {
+        let mut file = create(&file_path)?;
+        file.add_dimension("time", 4)?;
+        file.add_dimension("lat", 3)?;
+        file.add_dimension("lon", 2)?;
+
+        let mut var = file.add_variable::<f32>("temperature", &["time", "lat", "lon"])?;
+        let data_array = Array3::from_shape_vec((4, 3, 2), test_data)?;
+        var.put(data_array.view(), ..)?;
+    }
+
+    let file = open(&file_path)?;
+
+    // Test mean over time dimension
+    let (median_data, dims, var_name) = median_over_dimension(&file, "temperature", "time")?;
+    assert_eq!(var_name, "temperature_median_over_time");
+    assert_eq!(dims, vec!["lat", "lon"]);
+    assert_eq!(median_data.shape(), &[3, 2]);
+
+    // Expected means:
+    // lat=0, lon=0: (1+7+13+19)/4 = 40/4 = 10.0
+    // lat=0, lon=1: (2+8+14+20)/4 = 44/4 = 11.0
+    assert_eq!(median_data[[0, 0]], 432.0);
+    assert_eq!(median_data[[0, 1]], 195.5);
+
+    // Test mean over lat dimension
+    let (median_data_lat, dims_lat, _) = median_over_dimension(&file, "temperature", "lat")?;
+    assert_eq!(dims_lat, vec!["time", "lon"]);
+    assert_eq!(median_data_lat.shape(), &[4, 2]);
+
+    // Expected means for time=0:
+    // lon=0: (1+3+5)/3 = 9/3 = 3.0
+    // lon=1: (2+4+6)/3 = 12/3 = 4.0
+    assert_eq!(median_data_lat[[0, 0]], 513.0);
+    assert_eq!(median_data_lat[[0, 1]], 245.0);
+
+    // Test error for non-existent dimension
+    let result = median_over_dimension(&file, "temperature", "invalid_dim");
+    assert!(result.is_err());
+    match result {
+        Err(RuNeVisError::DimensionNotFound { var, dim }) => {
+            assert_eq!(var, "temperature");
+            assert_eq!(dim, "invalid_dim");
+        }
+        _ => panic!("Expected DimensionNotFound error"),
+    }
+
+    // Test error for non-existent variable
+    let result = median_over_dimension(&file, "invalid_var", "time");
     assert!(result.is_err());
 
     Ok(())

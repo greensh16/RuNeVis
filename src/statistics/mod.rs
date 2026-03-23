@@ -17,9 +17,9 @@ pub mod parallel;
 pub mod zarr;
 
 // Re-export the main types and functions for convenience
-pub use netcdf::{max_over_dimension, mean_over_dimension, min_over_dimension, sum_over_dimension};
+pub use netcdf::{max_over_dimension, mean_over_dimension, median_over_dimension, min_over_dimension, sum_over_dimension};
 pub use operations::{StatOperation, StatResult, StatisticalReduction};
-pub use parallel::{parallel_max_axis, parallel_mean_axis, parallel_min_axis, parallel_sum_axis};
+pub use parallel::{parallel_max_axis, parallel_mean_axis, parallel_median_axis, parallel_min_axis, parallel_sum_axis};
 
 // Legacy functions for backwards compatibility
 pub use netcdf::{reduce_max, reduce_min};
