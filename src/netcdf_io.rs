@@ -63,7 +63,7 @@ impl<'a> NetCDFWriter<'a> {
                 });
 
         let dim_refs: Vec<&str> = dim_names.iter().map(|s| s.as_str()).collect();
-        let mut new_var = file.add_variable::<f32>(var_name, &dim_refs)?;
+        let mut new_var = file.add_variable::<f32>(original_var_name, &dim_refs)?;
 
         if let Some(fv) = fill_value {
             new_var.put_attribute("_FillValue", fv)?;
