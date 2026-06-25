@@ -26,6 +26,34 @@ impl<'a> NetCDFWriter<'a> {
         }
     }
 
+    /// Copy all supported attributes from a source iterator onto a target variable
+    fn copy_attributes<'b>(
+        attrs: impl Iterator<Item = netcdf::Attribute<'b>>,
+        target: &mut netcdf::VariableMut,
+    ) -> Result<()> {
+        for attr in attrs {
+            match attr.value()? {
+                AttributeValue::Str(val) => {target.put_attribute(attr.name(), val)?;}
+                AttributeValue::Strs(vals) => {target.put_attribute(attr.name(), vals)?;}
+                AttributeValue::Float(val) => {target.put_attribute(attr.name(), val)?;}
+                AttributeValue::Floats(vals) => {target.put_attribute(attr.name(), vals)?;}
+                AttributeValue::Double(val) => {target.put_attribute(attr.name(), val)?;}
+                AttributeValue::Doubles(vals) => {target.put_attribute(attr.name(), vals)?;}
+                AttributeValue::Int(val) => {target.put_attribute(attr.name(), val)?;}
+                AttributeValue::Ints(vals) => {target.put_attribute(attr.name(), vals)?;}
+                AttributeValue::Short(val) => {target.put_attribute(attr.name(), val)?;}
+                AttributeValue::Shorts(vals) => {target.put_attribute(attr.name(), vals)?;}
+                _ => {
+                    println!(
+                        "⚠ Skipped unsupported attribute type for '{}'",
+                        attr.name()
+                    );
+                }
+            }
+        }
+        Ok(())
+    }
+
     /// Write statistical result to NetCDF file
     pub fn write_result(
         &self,
@@ -43,6 +71,23 @@ impl<'a> NetCDFWriter<'a> {
         // Define dimensions
         for (dim_name, &dim_len) in dim_names.iter().zip(data.shape()) {
             file.add_dimension(dim_name, dim_len)?;
+        }
+
+// Write coordinate variables (lat, lon, etc.) so they show up as variables, not just dims
+        for dim_name in dim_names {
+            if let Some(coord_var) = self.input_file.variable(dim_name) {
+                if coord_var.dimensions().len() == 1
+                    && coord_var.dimensions()[0].name() == *dim_name
+                {
+                    let coord_data = coord_var.get_values::<f64, _>(..)?;
+                    let mut new_coord_var =
+                        file.add_variable::<f64>(dim_name, &[dim_name.as_str()])?;
+                        
+                    Self::copy_attributes(coord_var.attributes(), &mut new_coord_var)?;
+                    new_coord_var.put_values(&coord_data, ..)?;
+
+                }
+            }
         }
 
         // Extract `_FillValue` from original variable
@@ -63,7 +108,7 @@ impl<'a> NetCDFWriter<'a> {
                 });
 
         let dim_refs: Vec<&str> = dim_names.iter().map(|s| s.as_str()).collect();
-        let mut new_var = file.add_variable::<f32>(var_name, &dim_refs)?;
+        let mut new_var = file.add_variable::<f32>(original_var_name, &dim_refs)?;
 
         if let Some(fv) = fill_value {
             new_var.put_attribute("_FillValue", fv)?;
@@ -71,50 +116,32 @@ impl<'a> NetCDFWriter<'a> {
 
         new_var.put(data.view(), ..)?;
 
-        // Copy remaining attributes excluding _FillValue
-        for attr in orig_var.attributes().filter(|a| a.name() != "_FillValue") {
-            match attr.value()? {
-                AttributeValue::Str(val) => {
-                    new_var.put_attribute(attr.name(), val)?;
-                }
-                AttributeValue::Strs(vals) => {
-                    new_var.put_attribute(attr.name(), vals)?;
-                }
-                AttributeValue::Float(val) => {
-                    new_var.put_attribute(attr.name(), val)?;
-                }
-                AttributeValue::Floats(vals) => {
-                    new_var.put_attribute(attr.name(), vals)?;
-                }
-                AttributeValue::Double(val) => {
-                    new_var.put_attribute(attr.name(), val)?;
-                }
-                AttributeValue::Doubles(vals) => {
-                    new_var.put_attribute(attr.name(), vals)?;
-                }
-                AttributeValue::Int(val) => {
-                    new_var.put_attribute(attr.name(), val)?;
-                }
-                AttributeValue::Ints(vals) => {
-                    new_var.put_attribute(attr.name(), vals)?;
-                }
-                AttributeValue::Short(val) => {
-                    new_var.put_attribute(attr.name(), val)?;
-                }
-                AttributeValue::Shorts(vals) => {
-                    new_var.put_attribute(attr.name(), vals)?;
-                }
-                _ => {
-                    println!("⚠ Skipped unsupported attribute type for '{}'", attr.name());
-                }
-            }
-        }
-
-        // Add history attribute
-        file.add_attribute(
-            "history",
-            format!("Created by RuNeVis on {}", Utc::now().to_rfc3339()),
+        Self::copy_attributes(
+            orig_var.attributes().filter(|a| a.name() != "_FillValue"),
+            &mut new_var,
         )?;
+
+        let mut name_iter = var_name.split('_');
+        let operation = name_iter.nth(1).unwrap_or("");
+        let dimension = name_iter.nth(1).unwrap_or("");
+
+        let new_history = match self.input_file.attribute("history") {
+            Some(attr) => match attr.value()? {
+                AttributeValue::Str(existing) => format!(
+                    "{}\nModified by RuNeVis at time {} by finding the {} over {} for {}",
+                    existing,
+                    Utc::now().to_rfc3339(),
+                    operation, 
+                    dimension,
+                    original_var_name
+
+                ),
+                _ => format!("Created by RuNeVis on {}", Utc::now().to_rfc3339()),
+            },
+            None => format!("Created by RuNeVis on {}", Utc::now().to_rfc3339()),
+        };
+
+        file.add_attribute("history", new_history)?;
 
         Ok(())
     }
