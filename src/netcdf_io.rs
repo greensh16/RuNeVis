@@ -121,11 +121,32 @@ impl<'a> NetCDFWriter<'a> {
             &mut new_var,
         )?;
 
+        let mut name_iter = var_name.split('_');
+        let operation = name_iter.nth(1).unwrap_or("");
+        let dimension = name_iter.nth(1).unwrap_or("");
+
         // Add history attribute
-        file.add_attribute(
-            "history",
-            format!("Created by RuNeVis on {}", Utc::now().to_rfc3339()),
-        )?;
+        // file.add_attribute(
+        //     "history",
+        //     format!("Created by RuNeVis on {}", Utc::now().to_rfc3339()),
+        // )?;
+        let new_history = match self.input_file.attribute("history") {
+            Some(attr) => match attr.value()? {
+                AttributeValue::Str(existing) => format!(
+                    "{}\nModified by RuNeVis at time {} by finding the {} over {} for {}",
+                    existing,
+                    Utc::now().to_rfc3339(),
+                    operation, 
+                    dimension,
+                    original_var_name
+
+                ),
+                _ => format!("Created by RuNeVis on {}", Utc::now().to_rfc3339()),
+            },
+            None => format!("Created by RuNeVis on {}", Utc::now().to_rfc3339()),
+        };
+
+        file.add_attribute("history", new_history)?;
 
         Ok(())
     }
