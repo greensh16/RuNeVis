@@ -447,7 +447,7 @@ fn test_netcdf_writer() -> Result<()> {
     // Verify the output file was created and contains expected data
     let output_file = open(&output_path)?;
     let var = output_file
-        .variable("result_var")
+        .variable("test_var")
         .expect("Variable should exist");
 
     assert_eq!(var.dimensions().len(), 2);

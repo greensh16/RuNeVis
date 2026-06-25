@@ -125,11 +125,6 @@ impl<'a> NetCDFWriter<'a> {
         let operation = name_iter.nth(1).unwrap_or("");
         let dimension = name_iter.nth(1).unwrap_or("");
 
-        // Add history attribute
-        // file.add_attribute(
-        //     "history",
-        //     format!("Created by RuNeVis on {}", Utc::now().to_rfc3339()),
-        // )?;
         let new_history = match self.input_file.attribute("history") {
             Some(attr) => match attr.value()? {
                 AttributeValue::Str(existing) => format!(
